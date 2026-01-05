@@ -49,8 +49,8 @@ def apply_BC_v(v, v_padded, rank, world_size):
     v_padded[0, 0, :, -1, :].fill_(0.0)
 
     if rank == 0:
-        # Z-Min (Fundo, no-slip)
-        v_padded[0, 0, 0, :, :].fill_(0.0)
+        # Z-Min (Fundo, free-slip)
+        v_padded[0, 0, 0, :, :] = v_padded[0, 0, 1, :, :]
 
     if rank == (world_size - 1):
         # Z-Max (Topo, free-slip)

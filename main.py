@@ -39,7 +39,7 @@ ratio_y = int(ny/nz)
 
 # AVISO: Com nz=40, nlevel=6 pode ser muito alto (40 -> 20 -> 10 -> 5 -> 2 -> 1).
 # Se der erro no Upsample, reduza para 4 ou 5.
-nlevel = 6
+nlevel = 5
 
 # # # ################################### # # #
 # # # ######    Linear Filter      ###### # # #
