@@ -775,8 +775,8 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
                 full_p = gather_all_data_3D(rank, values_p, None)
                 if rank == 0:
                     np.save(save_path+"/w"+str(itime), arr=full_w.cpu().detach().numpy()[0,0,:,:])
-                    np.save(save_path+"/v"+str(itime), arr=full_u.cpu().detach().numpy()[0,0,:,:])
-                    np.save(save_path+"/u"+str(itime), arr=full_v.cpu().detach().numpy()[0,0,:,:])
+                    np.save(save_path+"/v"+str(itime), arr=full_v.cpu().detach().numpy()[0,0,:,:])
+                    np.save(save_path+"/u"+str(itime), arr=full_u.cpu().detach().numpy()[0,0,:,:])
                     np.save(save_path+"/p"+str(itime), arr=full_p.cpu().detach().numpy()[0,0,:,:])
         end = time.time()
         print('time',(end-start))
