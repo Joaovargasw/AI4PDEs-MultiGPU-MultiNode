@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
 #  Copyright (C) 2023
-#  
+#
 #  Boyang Chen, Claire Heaney, Christopher Pain
 #  Applied Modelling and Computation Group
 #  Department of Earth Science and Engineering
 #  Imperial College London
 #  ++++++++++++++++++++++++++++++++++++++++
-#  Jiangnan Wu, Pin Wu 
-#  Shanghai Univeristy 
+#  Jiangnan Wu, Pin Wu
+#  Shanghai Univeristy
 #
 #  boyang.chen16@imperial.ac.uk
-#  
+#
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
 #  License as published by the Free Software Foundation,
@@ -25,24 +25,24 @@
 '''
 Freight train under cross wind
 -------------------------------------------------------------------------------------
-+                                        +                                        +  
-+                                        +                                        + 
-+              Rank 0                    +                Rank 1                  +       
-+                                        +                                        + 
-+                                        +                                        + 
++                                        +                                        +
++                                        +                                        +
++              Rank 0                    +                Rank 1                  +
++                                        +                                        +
++                                        +                                        +
 -------------------------------------------------------------------------------------
-+                                        +                                        +  
-+                                        +                                        + 
-+              Rank 2                    +                Rank 3                  +       
-+                                        +                                        + 
-+                                        +                                        + 
++                                        +                                        +
++                                        +                                        +
++              Rank 2                    +                Rank 3                  +
++                                        +                                        +
++                                        +                                        +
 -------------------------------------------------------------------------------------
 '''
 #-- Import general libraries
 import os
-import numpy as np 
+import numpy as np
 import pandas as pd
-import time 
+import time
 import math
 import torch
 import torch.nn as nn
@@ -63,7 +63,7 @@ dt = 0.01
 ub = -1.0
 ratio_x = int(nx/nz)
 ratio_y = int(ny/nz)
-nlevel = int(math.log(min(nx, ny, nz), 2)) + 1 
+nlevel = int(math.log(min(nx, ny, nz), 2)) + 1
 # ===> Marcelo
 print("nlevel: ", nlevel)
 nlevel = 6
@@ -143,8 +143,8 @@ n_out = 1000                       # Results output
 iteration = 10                    # Multigrid iteration
 nrestart = 0                      # Last time step for restart
 ctime_old = 0                     # Last ctime for restart
-LIBM = True                      # Immersed boundary method 
-ctime = 0                         # Initialise ctime   
+LIBM = True                      # Immersed boundary method
+ctime = 0                         # Initialise ctime
 save_fig = True                   # Save results
 Restart = False                   # Restart
 eplsion_k = 1e-04                 # Stablisatin factor in Petrov-Galerkin for velocity
@@ -164,7 +164,7 @@ class AI4Urban(nn.Module):
         self.diff = nn.Conv3d(1, 1, kernel_size=3, stride=1, padding=0)
 
         self.A = nn.Conv3d(1, 1, kernel_size=3, stride=1, padding=0)
-        self.res = nn.Conv3d(1, 1, kernel_size=2, stride=2, padding=0)  
+        self.res = nn.Conv3d(1, 1, kernel_size=2, stride=2, padding=0)
         self.prol = nn.Sequential(nn.Upsample(scale_factor=2, mode='nearest'),)
 
         self.A.weight.data = wA
@@ -225,13 +225,13 @@ class AI4Urban(nn.Module):
         nny = values_uu.shape[3]
         nnx = values_uu.shape[4]
 
-        values_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_u[0,0,:,:,:]        
+        values_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_u[0,0,:,:,:]
 
         values_uu[0,0,:,:,0].fill_(ub)
         values_uu[0,0,:,:,nx+1] = values_uu[0,0,:,:,nx]
         values_uu[0,0,:,0,:] = values_uu[0,0,:,1,:]
         values_uu[0,0,:,ny+1,:] = values_uu[0,0,:,ny,:]
-        values_uu[0,0,0,:,:] = values_uu[0,0,1,:,:] 
+        values_uu[0,0,0,:,:] = values_uu[0,0,1,:,:]
         values_uu[0,0,nz+1,:,:] = values_uu[0,0,nz,:,:]
         return values_uu
 
@@ -243,13 +243,13 @@ class AI4Urban(nn.Module):
         nny = values_uu.shape[3]
         nnx = values_uu.shape[4]
 
-        values_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_u[0,0,:,:,:]        
+        values_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_u[0,0,:,:,:]
 
         values_uu[0,0,:,:,0] = values_uu[0,0,:,:,1]
         values_uu[0,0,:,:,nx+1].fill_(ub)
         values_uu[0,0,:,0,:] = values_uu[0,0,:,1,:]
         values_uu[0,0,:,ny+1,:] = values_uu[0,0,:,ny,:]
-        values_uu[0,0,0,:,:] = values_uu[0,0,1,:,:] 
+        values_uu[0,0,0,:,:] = values_uu[0,0,1,:,:]
         values_uu[0,0,nz+1,:,:] = values_uu[0,0,nz,:,:]
         return values_uu
 
@@ -263,7 +263,7 @@ class AI4Urban(nn.Module):
 
         values_vv[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_v[0,0,:,:,:]
 
-        values_vv[0,0,:,:,0] = values_vv[0,0,:,:,1]*0 
+        values_vv[0,0,:,:,0] = values_vv[0,0,:,:,1]*0
         values_vv[0,0,:,:,nx+1] = values_vv[0,0,:,:,nx]
         values_vv[0,0,:,0,:].fill_(0.0)
         values_vv[0,0,:,ny+1,:] = values_vv[0,0,:,ny,:]
@@ -299,7 +299,7 @@ class AI4Urban(nn.Module):
 
         values_vv[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_v[0,0,:,:,:]
 
-        values_vv[0,0,:,:,0] = values_vv[0,0,:,:,1]*0 
+        values_vv[0,0,:,:,0] = values_vv[0,0,:,:,1]*0
         values_vv[0,0,:,:,nx+1] = values_vv[0,0,:,:,nx]
         values_vv[0,0,:,0,:] = values_vv[0,0,:,1,:]
         values_vv[0,0,:,ny+1,:].fill_(0.0)
@@ -334,8 +334,8 @@ class AI4Urban(nn.Module):
         nnx = values_ww.shape[4]
 
         values_ww[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_w[0,0,:,:,:]
-        
-        values_ww[0,0,:,:,0] =  values_ww[0,0,:,:,1]*0 
+
+        values_ww[0,0,:,:,0] =  values_ww[0,0,:,:,1]*0
         values_ww[0,0,:,:,nx+1] = values_ww[0,0,:,:,nx]
         values_ww[0,0,:,0,:] = values_ww[0,0,:,1,:]
         values_ww[0,0,:,ny+1,:] = values_ww[0,0,:,ny,:]
@@ -352,7 +352,7 @@ class AI4Urban(nn.Module):
         nnx = values_ww.shape[4]
 
         values_ww[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_w[0,0,:,:,:]
-        
+
         values_ww[0,0,:,:,0] =  values_ww[0,0,:,:,1]
         values_ww[0,0,:,:,nx+1] = values_ww[0,0,:,:,nx]*0
         values_ww[0,0,:,0,:] = values_ww[0,0,:,1,:]
@@ -370,8 +370,8 @@ class AI4Urban(nn.Module):
         nnx = values_ww.shape[4]
 
         values_ww[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_w[0,0,:,:,:]
-        
-        values_ww[0,0,:,:,0] =  values_ww[0,0,:,:,1]*0 
+
+        values_ww[0,0,:,:,0] =  values_ww[0,0,:,:,1]*0
         values_ww[0,0,:,:,nx+1] = values_ww[0,0,:,:,nx]
         values_ww[0,0,:,0,:] = values_ww[0,0,:,1,:]
         values_ww[0,0,:,ny+1,:] = values_ww[0,0,:,ny,:]
@@ -388,7 +388,7 @@ class AI4Urban(nn.Module):
         nnx = values_ww.shape[4]
 
         values_ww[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_w[0,0,:,:,:]
-        
+
         values_ww[0,0,:,:,0] =  values_ww[0,0,:,:,1]
         values_ww[0,0,:,:,nx+1] = values_ww[0,0,:,:,nx]*0
         values_ww[0,0,:,0,:] = values_ww[0,0,:,1,:]
@@ -398,41 +398,41 @@ class AI4Urban(nn.Module):
         return values_ww
 
     def solid_body(self, values_u, values_v, values_w, sigma, dt):
-        values_u = values_u / (1+dt*sigma) 
-        values_v = values_v / (1+dt*sigma) 
-        values_w = values_w / (1+dt*sigma) 
+        values_u = values_u / (1+dt*sigma)
+        values_v = values_v / (1+dt*sigma)
+        values_w = values_w / (1+dt*sigma)
         return values_u, values_v, values_w
 
-    def boundary_condition_p_left(self, values_p, values_pp):  
+    def boundary_condition_p_left(self, values_p, values_pp):
         nz = values_p.shape[2]
         ny = values_p.shape[3]
         nx = values_p.shape[4]
         nnz = values_pp.shape[2]
         nny = values_pp.shape[3]
         nnx = values_pp.shape[4]
-        
+
         values_pp[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_p[0,0,:,:,:]
 
-        values_pp[0,0,:,:,0] =  values_pp[0,0,:,:,1] 
-        values_pp[0,0,:,:,nx+1] = values_pp[0,0,:,:,nx] # outflow boundary condition 
+        values_pp[0,0,:,:,0] =  values_pp[0,0,:,:,1]
+        values_pp[0,0,:,:,nx+1] = values_pp[0,0,:,:,nx] # outflow boundary condition
         values_pp[0,0,:,0,:] = values_pp[0,0,:,1,:]
         values_pp[0,0,:,ny+1,:] = values_pp[0,0,:,ny,:]
         values_pp[0,0,0,:,:] = values_pp[0,0,1,:,:]
         values_pp[0,0,nz+1,:,:] = values_pp[0,0,nz,:,:]
         return values_pp
 
-    def boundary_condition_p_right(self, values_p, values_pp):  
+    def boundary_condition_p_right(self, values_p, values_pp):
         nz = values_p.shape[2]
         ny = values_p.shape[3]
         nx = values_p.shape[4]
         nnz = values_pp.shape[2]
         nny = values_pp.shape[3]
         nnx = values_pp.shape[4]
-        
+
         values_pp[0,0,1:nnz-1,1:nny-1,1:nnx-1] = values_p[0,0,:,:,:]
 
-        values_pp[0,0,:,:,0] =  values_pp[0,0,:,:,1] 
-        values_pp[0,0,:,:,nx+1] = values_pp[0,0,:,:,nx]*0 # outflow boundary condition 
+        values_pp[0,0,:,:,0] =  values_pp[0,0,:,:,1]
+        values_pp[0,0,:,:,nx+1] = values_pp[0,0,:,:,nx]*0 # outflow boundary condition
         values_pp[0,0,:,0,:] = values_pp[0,0,:,1,:]
         values_pp[0,0,:,ny+1,:] = values_pp[0,0,:,ny,:]
         values_pp[0,0,0,:,:] = values_pp[0,0,1,:,:]
@@ -449,8 +449,8 @@ class AI4Urban(nn.Module):
 
         k_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = k_u[0,0,:,:,:]
 
-        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1]*0 
-        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx] 
+        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1]*0
+        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx]
         k_uu[0,0,:,0,:] = k_uu[0,0,:,1,:]*0
         k_uu[0,0,:,ny+1,:] = k_uu[0,0,:,ny,:]
         k_uu[0,0,0,:,:] = k_uu[0,0,1,:,:]*0
@@ -466,8 +466,8 @@ class AI4Urban(nn.Module):
         nnx = k_uu.shape[4]
 
         k_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = k_u[0,0,:,:,:]
-        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1] 
-        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx]*0 
+        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1]
+        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx]*0
         k_uu[0,0,:,0,:] = k_uu[0,0,:,1,:]*0
         k_uu[0,0,:,ny+1,:] = k_uu[0,0,:,ny,:]
         k_uu[0,0,0,:,:] = k_uu[0,0,1,:,:]*0
@@ -483,8 +483,8 @@ class AI4Urban(nn.Module):
         nnx = k_uu.shape[4]
 
         k_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = k_u[0,0,:,:,:]
-        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1]*0 
-        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx] 
+        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1]*0
+        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx]
         k_uu[0,0,:,0,:] = k_uu[0,0,:,1,:]
         k_uu[0,0,:,ny+1,:] = k_uu[0,0,:,ny,:]*0
         k_uu[0,0,0,:,:] = k_uu[0,0,1,:,:]*0
@@ -500,8 +500,8 @@ class AI4Urban(nn.Module):
         nnx = k_uu.shape[4]
 
         k_uu[0,0,1:nnz-1,1:nny-1,1:nnx-1] = k_u[0,0,:,:,:]
-        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1] 
-        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx]*0 
+        k_uu[0,0,:,:,0] =  k_uu[0,0,:,:,1]
+        k_uu[0,0,:,:,nx+1] = k_uu[0,0,:,:,nx]*0
         k_uu[0,0,:,0,:] = k_uu[0,0,:,1,:]
         k_uu[0,0,:,ny+1,:] = k_uu[0,0,:,ny,:]*0
         k_uu[0,0,0,:,:] = k_uu[0,0,1,:,:]*0
@@ -513,9 +513,9 @@ class AI4Urban(nn.Module):
         ny = w.shape[3]
         nx = w.shape[4]
         ww = F.pad(w, (1, 1, 1, 1, 1, 1), mode='constant', value=0)
-    
-        ww[0,0,:,:,0] =  ww[0,0,:,:,1]*0 
-        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx] 
+
+        ww[0,0,:,:,0] =  ww[0,0,:,:,1]*0
+        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx]
         ww[0,0,:,0,:] = ww[0,0,:,1,:]*0
         ww[0,0,:,ny+1,:] = ww[0,0,:,ny,:]
         ww[0,0,0,:,:] = ww[0,0,1,:,:]*0
@@ -527,9 +527,9 @@ class AI4Urban(nn.Module):
         ny = w.shape[3]
         nx = w.shape[4]
         ww = F.pad(w, (1, 1, 1, 1, 1, 1), mode='constant', value=0)
-    
+
         ww[0,0,:,:,0] =  ww[0,0,:,:,1]
-        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx]*0 
+        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx]*0
         ww[0,0,:,0,:] = ww[0,0,:,1,:]*0
         ww[0,0,:,ny+1,:] = ww[0,0,:,ny,:]
         ww[0,0,0,:,:] = ww[0,0,1,:,:]*0
@@ -541,9 +541,9 @@ class AI4Urban(nn.Module):
         ny = w.shape[3]
         nx = w.shape[4]
         ww = F.pad(w, (1, 1, 1, 1, 1, 1), mode='constant', value=0)
-    
-        ww[0,0,:,:,0] =  ww[0,0,:,:,1]*0 
-        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx] 
+
+        ww[0,0,:,:,0] =  ww[0,0,:,:,1]*0
+        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx]
         ww[0,0,:,0,:] = ww[0,0,:,1,:]
         ww[0,0,:,ny+1,:] = ww[0,0,:,ny,:]*0
         ww[0,0,0,:,:] = ww[0,0,1,:,:]*0
@@ -555,9 +555,9 @@ class AI4Urban(nn.Module):
         ny = w.shape[3]
         nx = w.shape[4]
         ww = F.pad(w, (1, 1, 1, 1, 1, 1), mode='constant', value=0)
-    
+
         ww[0,0,:,:,0] =  ww[0,0,:,:,1]
-        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx]*0 
+        ww[0,0,:,:,nx+1] = ww[0,0,:,:,nx]*0
         ww[0,0,:,0,:] = ww[0,0,:,1,:]
         ww[0,0,:,ny+1,:] = ww[0,0,:,ny,:]*0
         ww[0,0,0,:,:] = ww[0,0,1,:,:]*0
@@ -570,8 +570,8 @@ class AI4Urban(nn.Module):
         b = -(self.xadv(values_uu) + self.yadv(values_vv) + self.zadv(values_ww)) / dt
         for MG in range(iteration):
             w = torch.zeros((1,1,1,1,1), device=f"cuda:{rank}")
-            r = self.A(values_pp) - b 
-            r_s = []  
+            r = self.A(values_pp) - b
+            r_s = []
             r_s.append(r)
             for i in range(1,nlevel-1):
                 r = self.res(r)
@@ -579,10 +579,10 @@ class AI4Urban(nn.Module):
             for i in reversed(range(1,nlevel-1)):
                 ww = structured_halo_update_3D(rank,boundary_condition_cw(w))  # ******** halo update -> ww ********
                 w = w - self.A(ww) / diag + r_s[i] / diag
-                w = self.prol(w)         
+                w = self.prol(w)
             values_p = values_p - w
             values_p = values_p - self.A(values_pp) / diag + b / diag
-            values_pp = structured_halo_update_3D(rank,boundary_condition_p(values_p, values_pp)) # ******** halo update -> values_pp ********      
+            values_pp = structured_halo_update_3D(rank,boundary_condition_p(values_p, values_pp)) # ******** halo update -> values_pp ********
         return values_p, w, r
 
     def PG_vector(self, rank, values_uu, values_vv, values_ww, values_u, values_v, values_w, k1, k_uu, k_vv, k_ww, sigma):#, ADx_u, ADy_u, ADz_u, ADx_v, ADy_v, ADz_v, ADx_w, ADy_w, ADz_w):
@@ -605,9 +605,9 @@ class AI4Urban(nn.Module):
         # k_w = 0.1 * dz * torch.abs(1/3 * dx**-3 * (torch.abs(values_u) * dx + torch.abs(values_v) * dy + torch.abs(values_w) * dz) * self.diff(values_ww)) / \
         #     (1e-03 + (torch.abs(self.xadv(values_ww)) * dx**-3 + torch.abs(self.yadv(values_ww)) * dx**-3 + torch.abs(self.zadv(values_ww)) * dx**-3) / 3)
 
-        # k_u = torch.minimum(k_u, k1) / (1+dt*sigma) 
-        # k_v = torch.minimum(k_v, k1) / (1+dt*sigma) 
-        # k_w = torch.minimum(k_w, k1) / (1+dt*sigma) 
+        # k_u = torch.minimum(k_u, k1) / (1+dt*sigma)
+        # k_v = torch.minimum(k_v, k1) / (1+dt*sigma)
+        # k_w = torch.minimum(k_w, k1) / (1+dt*sigma)
 
         # ===> Marcelo
         #k_u = torch.tensor(torch.ones_like(values_u), device=f"cuda:{rank}")
@@ -631,20 +631,20 @@ class AI4Urban(nn.Module):
         return k_u, k_v, k_w
 
     def forward(self,rank, values_u, values_uu, values_v, values_vv, values_w, values_ww, values_p, values_pp, b_uu, b_vv, b_ww, k1, dt, iteration, k_uu, k_vv, k_ww,sigma):
-    # Calling halo update functions 
+    # Calling halo update functions
         boundary_condition_u = self.implementations_u.get(rank, None)
         boundary_condition_v = self.implementations_v.get(rank, None)
         boundary_condition_w = self.implementations_w.get(rank, None)
         boundary_condition_p = self.implementations_p.get(rank, None)
     # Solid body
         if LIBM == True: [values_u, values_v, values_w] = self.solid_body(values_u, values_v, values_w, sigma, dt)
-    # Padding velocity vectors 
+    # Padding velocity vectors
         values_uu = structured_halo_update_3D(rank,boundary_condition_u(values_u,values_uu)) # ******** halo update -> values_uu ********
         values_vv = structured_halo_update_3D(rank,boundary_condition_v(values_v,values_vv)) # ******** halo update -> values_vv ********
         values_ww = structured_halo_update_3D(rank,boundary_condition_w(values_w,values_ww)) # ******** halo update -> values_ww ********
         values_pp = structured_halo_update_3D(rank,boundary_condition_p(values_p,values_pp)) # ******** halo update -> values_pp ********
 
-        # Grapx_p = self.xadv(values_pp) * dt ; Grapy_p = self.yadv(values_pp) * dt ; Grapz_p = self.zadv(values_pp) * dt  
+        # Grapx_p = self.xadv(values_pp) * dt ; Grapy_p = self.yadv(values_pp) * dt ; Grapz_p = self.zadv(values_pp) * dt
         # ADx_u = self.xadv(values_uu) ; ADy_u = self.yadv(values_uu) ; ADz_u = self.zadv(values_uu)
         # ADx_v = self.xadv(values_vv) ; ADy_v = self.yadv(values_vv) ; ADz_v = self.zadv(values_vv)
         # ADx_w = self.xadv(values_ww) ; ADy_w = self.yadv(values_ww) ; ADz_w = self.zadv(values_ww)
@@ -659,35 +659,35 @@ class AI4Urban(nn.Module):
         b_w = values_w + 0.5 * (Re * k_w * dt - values_u * self.xadv(values_ww) * dt - values_v * self.yadv(values_ww) * dt - values_w * self.zadv(values_ww) * dt) - self.zadv(values_pp) * dt #dtGrapz_p
     # Solid body
         if LIBM == True: [b_u, b_v, b_w] = self.solid_body(b_u, b_v, b_w, sigma, dt)
-    # Padding velocity vectors 
-        b_uu = structured_halo_update_3D(rank,boundary_condition_u(b_u,b_uu)) # ******** halo update -> b_uu ******** 
-        b_vv = structured_halo_update_3D(rank,boundary_condition_v(b_v,b_vv)) # ******** halo update -> b_vv ******** 
-        b_ww = structured_halo_update_3D(rank,boundary_condition_w(b_w,b_ww)) # ******** halo update -> b_ww ******** 
+    # Padding velocity vectors
+        b_uu = structured_halo_update_3D(rank,boundary_condition_u(b_u,b_uu)) # ******** halo update -> b_uu ********
+        b_vv = structured_halo_update_3D(rank,boundary_condition_v(b_v,b_vv)) # ******** halo update -> b_vv ********
+        b_ww = structured_halo_update_3D(rank,boundary_condition_w(b_w,b_ww)) # ******** halo update -> b_ww ********
 
         # ADx_u = self.xadv(b_uu) ; ADy_u = self.yadv(b_uu) ; ADz_u = self.zadv(b_uu)
         # ADx_v = self.xadv(b_vv) ; ADy_v = self.yadv(b_vv) ; ADz_v = self.zadv(b_vv)
         # ADx_w = self.xadv(b_ww) ; ADy_w = self.yadv(b_ww) ; ADz_w = self.zadv(b_ww)
-        # AD2_u = self.diff(b_uu) ; AD2_v = self.diff(b_vv) ; AD2_w = self.diff(b_ww)        
+        # AD2_u = self.diff(b_uu) ; AD2_v = self.diff(b_vv) ; AD2_w = self.diff(b_ww)
     # Second step for solving uvw
         [k_u, k_v, k_w] = self.PG_vector(rank, b_uu, b_vv, b_ww, b_u, b_v, b_w, k1, k_uu, k_vv, k_ww, sigma)
         # ,
         #                                ADx_u, ADy_u, ADz_u, ADx_v, ADy_v, ADz_v, ADx_w, ADy_w, ADz_w)
 
-        values_u = values_u + Re * k_u * dt - b_u * self.xadv(b_uu) * dt - b_v * self.yadv(b_uu) * dt - b_w * self.zadv(b_uu) * dt - self.xadv(values_pp) * dt #dtGrapx_p 
-        values_v = values_v + Re * k_v * dt - b_u * self.xadv(b_vv) * dt - b_v * self.yadv(b_vv) * dt - b_w * self.zadv(b_vv) * dt - self.yadv(values_pp) * dt #dtGrapy_p 
+        values_u = values_u + Re * k_u * dt - b_u * self.xadv(b_uu) * dt - b_v * self.yadv(b_uu) * dt - b_w * self.zadv(b_uu) * dt - self.xadv(values_pp) * dt #dtGrapx_p
+        values_v = values_v + Re * k_v * dt - b_u * self.xadv(b_vv) * dt - b_v * self.yadv(b_vv) * dt - b_w * self.zadv(b_vv) * dt - self.yadv(values_pp) * dt #dtGrapy_p
         values_w = values_w + Re * k_w * dt - b_u * self.xadv(b_ww) * dt - b_v * self.yadv(b_ww) * dt - b_w * self.zadv(b_ww) * dt - self.zadv(values_pp) * dt #dtGrapz_p
     # Solid body
         if LIBM == True: [values_u, values_v, values_w] = self.solid_body(values_u, values_v, values_w, sigma, dt)
-    # pressure    
+    # pressure
         values_uu = structured_halo_update_3D(rank,boundary_condition_u(values_u,values_uu))  # ******** halo update -> values_uu ********
         values_vv = structured_halo_update_3D(rank,boundary_condition_v(values_v,values_vv))  # ******** halo update -> values_vv ********
-        values_ww = structured_halo_update_3D(rank,boundary_condition_w(values_w,values_ww))  # ******** halo update -> values_ww ********   
+        values_ww = structured_halo_update_3D(rank,boundary_condition_w(values_w,values_ww))  # ******** halo update -> values_ww ********
         [values_p, w ,r] = self.F_cycle_MG(rank, values_uu, values_vv, values_ww, values_p, values_pp, iteration, diag, dt, nlevel, ratio_x, ratio_y)
     # Pressure gradient correction
         values_pp = structured_halo_update_3D(rank,boundary_condition_p(values_p, values_pp)) # ******** halo update -> values_pp ********
-        values_u = values_u - self.xadv(values_pp) * dt         
-        values_v = values_v - self.yadv(values_pp) * dt 
-        values_w = values_w - self.zadv(values_pp) * dt      
+        values_u = values_u - self.xadv(values_pp) * dt
+        values_v = values_v - self.yadv(values_pp) * dt
+        values_w = values_w - self.zadv(values_pp) * dt
     # Solid body
         if LIBM == True: [values_u, values_v, values_w] = self.solid_body(values_u, values_v, values_w, sigma, dt)
         return values_u, values_v, values_w, values_p, w, r
@@ -723,10 +723,10 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
         nrestart = 8000
         ctime_old = nrestart*dt
         print('Restart solver!')
-    # #######################################################    
+    # #######################################################
     # ################# Only for IBM ########################
     if LIBM == True:
-        sigma = torch.zeros(input_shape, dtype=torch.float32) 
+        sigma = torch.zeros(input_shape, dtype=torch.float32)
         for i in range(nx):
             for j in range(ny):
                 for k in range(nz):
@@ -739,7 +739,7 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
     plt.gca().invert_yaxis()
     plt.savefig('Flow_past_sphere.jpg')
     plt.close()
-    
+
     init_process(rank, world_size)
     device = torch.device(f"cuda:{rank}")
     tensor_split = [values_u,values_v,values_w,values_p,k1,values_uu,values_vv,values_ww,values_pp,\
@@ -756,9 +756,9 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
     with torch.no_grad():
         for itime in range(1,ntime+1):
             [values_u, values_v, values_w, values_p, w, r] = model(rank,values_u, values_uu, values_v, values_vv, values_w, values_ww, values_p, values_pp, b_uu, b_vv, b_ww, k1, dt, iteration, k_uu, k_vv, k_ww,sigma)
-            # output   
+            # output
             if rank == 0:
-                print('Time step:', itime) 
+                print('Time step:', itime)
                 print('Pressure error:', np.max(np.abs(w.cpu().detach().numpy())), 'cty equation residual:', np.max(np.abs(r.cpu().detach().numpy())))
                 print('========================================================')
 
@@ -769,14 +769,15 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
                 print(save_path+'Not converged !!!!!!')
                 break
             if save_fig == True and itime % n_out == 0:
-                values_w1= gather_all_data_3D(rank,values_w,values_w1)
-                values_u1= gather_all_data_3D(rank,values_u,values_u1)
-                values_v1= gather_all_data_3D(rank,values_v,values_v1)
-                values_p1= gather_all_data_3D(rank,values_p,values_p1)
-                np.save(save_path+"/w"+str(itime), arr=values_w1.cpu().detach().numpy()[0,0,:,:])
-                np.save(save_path+"/v"+str(itime), arr=values_v1.cpu().detach().numpy()[0,0,:,:])
-                np.save(save_path+"/u"+str(itime), arr=values_u1.cpu().detach().numpy()[0,0,:,:])
-                np.save(save_path+"/p"+str(itime), arr=values_p1.cpu().detach().numpy()[0,0,:,:])
+                full_w = gather_all_data_3D(rank, values_w, None)
+                full_u = gather_all_data_3D(rank, values_u, None)
+                full_v = gather_all_data_3D(rank, values_v, None)
+                full_p = gather_all_data_3D(rank, values_p, None)
+                if rank == 0:
+                    np.save(save_path+"/w"+str(itime), arr=full_w.cpu().detach().numpy()[0,0,:,:])
+                    np.save(save_path+"/v"+str(itime), arr=full_u.cpu().detach().numpy()[0,0,:,:])
+                    np.save(save_path+"/u"+str(itime), arr=full_v.cpu().detach().numpy()[0,0,:,:])
+                    np.save(save_path+"/p"+str(itime), arr=full_p.cpu().detach().numpy()[0,0,:,:])
         end = time.time()
         print('time',(end-start))
 

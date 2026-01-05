@@ -26,9 +26,8 @@ def apply_BC_u(u, u_padded, rank, world_size, ub):
     # 3. Aplicar BCs Físicas (Z) - SÓ ranks das pontas
 
     if rank == 0:
-        # Z-Min (Fundo, no-slip)
-        u_padded[0, 0, 0, :, :].fill_(0.0)
-
+        # Z-Min (Fundo, free-slip)
+        u_padded[0, 0, 0, :, :] = u_padded[0, 0, 1, :, :]
     if rank == (world_size - 1):
         # Z-Max (Topo, free-slip)
         u_padded[0, 0, -1, :, :] = u_padded[0, 0, -2, :, :]
