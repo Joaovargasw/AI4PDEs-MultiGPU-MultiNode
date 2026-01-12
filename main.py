@@ -15,6 +15,7 @@ from solver import AI4Urban
 # # # ################################### # # #
 DEBUG_PRINTS = False
 SAVE = True
+Restart = False
 nx = 800 ; ny = 320 ; nz = 320
 dx = 0.0125 ; dy = 0.0125 ; dz = 0.0125
 Re = 0.001
