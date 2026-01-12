@@ -27,7 +27,6 @@ LIBM = True
 
 ratio_x = int(nx/nz)
 ratio_y = int(ny/nz)
-diag = wA[0,0,1,1,1].item()       # Diagonal component
 #nlevels is defined by calculate_max_nlevel after backend is initialized
 
 def get_neighbors(rank, world_size):
@@ -124,7 +123,6 @@ def train(rank, world_size, local_rank,nlevel, ratio_x, ratio_y):
         print(f'Global Mesh resolution: (1, 1, {nz}, {ny}, {nx})')
         print(f'Local Mesh resolution (Rank 0): {local_shape}')
         print(f'Time step: {dt}, Steps: {ntime}')
-        print('Diagonal componet:', diag)
         os.makedirs('FPS', exist_ok=True)
 
     start = time.time()
