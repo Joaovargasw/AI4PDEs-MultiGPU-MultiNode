@@ -24,6 +24,7 @@ ub = -1.0
 iteration = 10
 ntime = 40
 n_out = 10
+nrestart = 0
 LIBM = True
 
 ratio_x = int(nx/nz)
@@ -128,7 +129,7 @@ def train(rank, world_size, local_rank,nlevel, ratio_x, ratio_y):
 
     start = time.time()
     with torch.no_grad():
-        for itime in range(nrestart + 1, ntime + 1):
+        for itime in range(1, ntime + 1):
             if (DEBUG_PRINTS == True and rank == 0):
                 print(f'Step {itime}/{ntime}')
 
