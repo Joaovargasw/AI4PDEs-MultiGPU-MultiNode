@@ -56,7 +56,7 @@ from exchange_3D_complete import structured_halo_update_3D,split_and_rearrange_t
 # # # ################################### # # #
 nx = 800
 ny = 320
-nz = 320
+nz = 512
 dx = 0.0125 ; dy = 0.0125 ; dz = 0.0125
 Re = 0.001
 dt = 0.01
@@ -145,7 +145,7 @@ nrestart = 0                      # Last time step for restart
 ctime_old = 0                     # Last ctime for restart
 LIBM = True                      # Immersed boundary method
 ctime = 0                         # Initialise ctime
-save_fig = True                   # Save results
+save_fig = False                   # Save results
 Restart = False                   # Restart
 eplsion_k = 1e-04                 # Stablisatin factor in Petrov-Galerkin for velocity
 diag = np.array(wA)[0,0,1,1,1]    # Diagonal component
@@ -757,18 +757,20 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
         for itime in range(1,ntime+1):
             [values_u, values_v, values_w, values_p, w, r] = model(rank,values_u, values_uu, values_v, values_vv, values_w, values_ww, values_p, values_pp, b_uu, b_vv, b_ww, k1, dt, iteration, k_uu, k_vv, k_ww,sigma)
             # output
-            if rank == 0:
-                print('Time step:', itime)
-                print('Pressure error:', np.max(np.abs(w.cpu().detach().numpy())), 'cty equation residual:', np.max(np.abs(r.cpu().detach().numpy())))
-                print('========================================================')
+            #if rank == 0:
+            #    print('Time step:', itime)
+            #    print('Pressure error:', np.max(np.abs(w.cpu().detach().numpy())), 'cty equation residual:', np.max(np.abs(r.cpu().detach().numpy())))
+            #    print('========================================================')
 
-            save_path = 'FPS'
-            os.makedirs(save_path, exist_ok=True)
 
-            if np.max(np.abs(w.cpu().detach().numpy())) > 80000.0:
-                print(save_path+'Not converged !!!!!!')
-                break
+            #if np.max(np.abs(w.cpu().detach().numpy())) > 80000.0:
+            #    print(save_path+'Not converged !!!!!!')
+            #    break
             if save_fig == True and itime % n_out == 0:
+                save_path = 'FPS'
+                os.makedirs(save_path, exist_ok=True)
+
+                start_save = time.time()
                 full_w = gather_all_data_3D(rank, values_w, None)
                 full_u = gather_all_data_3D(rank, values_u, None)
                 full_v = gather_all_data_3D(rank, values_v, None)
@@ -778,6 +780,8 @@ def train(rank,world_size,values_w1,values_u1,values_v1,values_p1):
                     np.save(save_path+"/v"+str(itime), arr=full_v.cpu().detach().numpy()[0,0,:,:])
                     np.save(save_path+"/u"+str(itime), arr=full_u.cpu().detach().numpy()[0,0,:,:])
                     np.save(save_path+"/p"+str(itime), arr=full_p.cpu().detach().numpy()[0,0,:,:])
+                    end_save = time.time()
+                    print('gather time: ', (end_save - start_save))
         end = time.time()
         print('time',(end-start))
 
