@@ -1,0 +1,104 @@
+# AI4PDEs - Multi-GPU / Multi-Node Domain Decomposition
+
+This repository contains the distributed implementation of the **AI4URBAN** Computational Fluid Dynamics (CFD) solver using PyTorch. The framework relies on the **NVIDIA Collective Communications Library (NCCL)** for high-performance inter-GPU communication and supports dynamic spatial domain decomposition strategies to scale from a single node to massive supercomputer clusters.
+
+---
+
+## 📂 Repository Structure
+
+The repository is organized to track the evolution of the parallelization strategies:
+
+* **`original/`**: Contains the original AI4PDE implementation. It is designed to run on a single node (4 GPUs) using a fixed 2D (X, Y) quadrant decomposition.
+* **`Z-slice/`**: The first multi-node iteration of the code, implementing a fixed 1D domain decomposition specifically along the Z-axis.
+* **`topology/`**: **(Main Version)** The state-of-the-art unified implementation. It introduces a dynamic `Topology` manager that allows the user to select the decomposition strategy at runtime.
+* **`tools/`**: Auxiliary scripts for data post-processing and job dispatching.
+
+> 💡 **Note:** The core unified scripts (`main.py`, `solver.py`, `halo_exchange.py`, and `boundary_conditions.py`) are located inside the `topology/` directory.
+
+---
+
+## 🧩 Domain Decomposition Strategies
+
+The `topology/` version abstracts the mathematical complexity of neighbor mapping and boundary conditions. You can slice the global 3D grid in different ways depending on your cluster architecture and grid dimensions.
+
+| Topology Flag | Slicing Direction | Description | Impact on `nlevel` (Multigrid) |
+| :--- | :--- | :--- | :--- |
+| `--topology 1d-x` | **X-Axis** | Slices the domain vertically along X. | ⚠️ Restricts depth |
+| `--topology 1d-y` | **Y-Axis** | Slices the domain horizontally along Y. | ⚠️ Restricts depth |
+| `--topology 1d-z` | **Z-Axis** | Slices the domain in depth along Z. | ⚠️ Restricts depth |
+| `--topology 3d` | **Hybrid (X, Y, Z)** | Z-slice across nodes, X/Y quadrants internally. | ✅ **Preserves maximum depth** |
+
+**Why choose 3D?**
+The `3d` approach creates isotropic, cube-like subdomains that preserve volume thickness. This allows the geometric Multigrid solver to reach deeper `nlevel` values, significantly improving the pressure convergence and physical accuracy of the simulation.
+
+---
+
+## 🚀 How to Run (`topology/` version)
+
+The unified version is executed using `torch.distributed.run` (or `torchrun`). The script accepts the following crucial arguments:
+
+* `--nx`, `--ny`, `--nz`: Global grid dimensions (must be perfectly divisible by the process grid).
+* `--topology`: The decomposition strategy (`1d-x`, `1d-y`, `1d-z`, or `3d`).
+* `--save`: Set to `1` to enable distributed I/O tensor saving, or `0` to disable.
+* `--debug`: Set to `1` for detailed execution logs.
+
+### 🖥️ Example: Running on Santos Dumont Supercomputer (SLURM)
+
+Below is a simplified SLURM script ready to execute the `topology` version on the LNCC Santos Dumont supercomputer using NCCL over InfiniBand. 
+
+This script requests **2 nodes** (8 GPUs total) and uses the **3D decomposition** strategy for a `512x512x512` grid.
+
+```bash
+#!/bin/bash
+#SBATCH --exclusive
+#SBATCH -p sequana_gpu_dev       # Replace with your target partition
+#SBATCH --nodes=2                # Number of nodes
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:4             # GPUs per node
+#SBATCH --cpus-per-task=48
+#SBATCH --time=00:30:00
+#SBATCH -J ai4pde_topology
+#SBATCH -o multinode_%j.out
+#SBATCH -e multinode_%j.err
+
+set -e
+
+# 1. Load the PyTorch Environment
+module load python/3.10.16_sequana
+
+# 2. Set NCCL and PyTorch Distributed Environment Variables
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+export NCCL_SOCKET_IFNAME=ib0
+export RDZV_SOCKET_IFNAME=ib0
+export NCCL_DEBUG=WARN
+export MASTER_ADDR=$(scontrol show hostnames $SLURM_NODELIST | head -n 1)
+export MASTER_PORT=29500
+
+# 3. Enter the unified code directory
+cd topology
+
+echo "Starting AI4URBAN Simulation..."
+
+set +e
+# 4. Launch the distributed job
+srun python3 -m torch.distributed.run \
+    --nnodes=$SLURM_JOB_NUM_NODES \
+    --nproc_per_node=4 \
+    --rdzv_id=$SLURM_JOB_ID \
+    --rdzv_backend=c10d \
+    --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT \
+    main.py \
+    --nx 512 \
+    --ny 512 \
+    --nz 512 \
+    --topology 3d \
+    --save 1 \
+    --debug 1
+set -e
+
+echo "Simulation Completed."
+```
+To submit the job to the queue, simply save the script above as run_multinode.slurm and run:
+```bash
+sbatch run_multinode.slurm
+```
