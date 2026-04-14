@@ -1,13 +1,55 @@
 #!/usr/bin/env python
-import os
-import sys
+
+#esse código implementa um solver de CFD distribuído, baseado em redes neurais, que resolve equações físicas 
+#(Navir-Stokes) em paralelo.
+
+#Divide o domínio 3D (nx, ny, nz entre vários processos)
+#Os processos trocam dados nas bordas (halo exchange)
+
+#Base teórica: 
+#CFD = resolver equações diferenciais (ex: fluxo de fluidos)
+#Paralelismo = decomposição de domínio
+
+
+
+import os  
+#interação com o sistema operacional, permitindo no código acessar variáveis de ambiente (os.environ),
+#manipular caminhos (os.pth), criar/remover diretórios e arquivos, e obter informações do sistema; em códigos importante
+#para configurar RANK, WORLD_SIZE, caminhos de dados ou diretórios de saída.
+
+ 
+import sys 
+# importa o módulo que dá acesso direto ao ambiente de execução do Python, permitindo 
+#manipular argumentos de linha de comando (sys.arg), encerrar o programa, acessar caminhos e obter informçaões do
+#interpretador; no contexto do seu código distribuído. usado principalmente para ler parâmetros passados na execução 
+#(número de processos, configurações da simulação).
+
 import argparse
+# importa o módulo usado para ler e interpretar argumetnos passados pela linha de comando, permitindo que o programa receba
+#parâmtros externos (como tamanho da malha, número de iterações, caminhos de arquivos e etc.) de forma estrutura 
+#usado para tornar a simulação configurável sem precisar alterar o código diretamente..
+
 import numpy as np
+#
+
 import time
+#
+
 import math
+#
+
 import torch
+# importa a biblioteca PyTorch, usada para computação numérica acelerada (principalmnte em GPU) e construção de modelos de
+#redes nurais; nesse código, é repsonsável por executar os cáculos do solver AI4PDE em paralelo na GPUs, gerenciar tensores
+#e permitir operações eficientes ncessárias para simular as equações de fluidos.
+
 import torch.distributed as distributed
+# 
+
 import matplotlib.pyplot as plt
+#
+
+
 
 from halo_exchange import init_process, gather_all_data
 from solver import AI4Urban
